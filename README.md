@@ -1,108 +1,128 @@
 # RFA Test Data Analyser
 
-**Automated multi-channel sensor data analysis pipeline for test engineering applications.**
+Automated multi-channel sensor data analysis for rotating component test engineering.
 
-Built by Prajwal Bekal — M.Sc. Mechatronics, DIT Cham
+This project simulates an engineering post-processing workflow for endurance-test data. It reads raw sensor data, filters noisy signals, calculates test metrics, performs FFT analysis, flags abnormal frequency signatures, and generates a structured PDF report.
 
----
+## Why this project matters
 
-## What it does
+Manual test-data review is slow, inconsistent, and easy to repeat incorrectly. This tool shows how a test engineer can move from raw DAQ-style CSV data to a repeatable pass/fail report with plots and diagnostic evidence.
 
-This Python tool simulates the post-processing pipeline I built at Triveni Engineering for rotating component endurance testing. It takes raw multi-channel sensor data (vibration, force, torque, temperature), applies signal processing, runs FFT analysis, and automatically generates a structured PDF test report — no manual steps required.
+## Features
 
-**Input:** Raw sensor CSV file (or auto-generated synthetic data)
+- Multi-channel analysis for vibration, force, torque, and temperature
+- Butterworth low-pass filtering for noise reduction
+- FFT-based vibration frequency analysis
+- Automatic peak detection for dominant frequencies
+- Configurable acceptance limits and pass/fail checks
+- PDF report generation with plots and engineering summary
+- Optional real-time DAQ simulator with live plots
 
-**Output:**
-- `output/test_report.pdf` — Full PDF test report with metrics, FFT analysis, plots, and pass/fail verdict
-- `output/plot_time_domain.png` — 4-channel time-domain overview
-- `output/plot_fft.png` — FFT frequency spectrum with annotated peaks
-- `output/plot_metrics.png` — Metrics vs acceptance limits bar chart
+## Repository Structure
 
----
+```text
+.
+├── src/
+│   ├── test_analyser.py      # Batch analysis and PDF report generation
+│   └── daq_realtime.py       # Real-time DAQ simulation and live FFT display
+├── docs/
+│   └── test_report_sample.pdf
+├── requirements.txt
+└── README.md
+```
 
 ## Pipeline
 
-```
-Raw CSV data
-    ↓
-Butterworth low-pass filter (remove noise)
-    ↓
-Compute metrics (RMS, peak, mean per channel)
-    ↓
-FFT analysis — identify dominant frequencies
-    ↓
-Pass/fail evaluation against acceptance limits
-    ↓
-Automated PDF report generation
+```text
+Raw sensor CSV
+  -> Butterworth low-pass filtering
+  -> RMS, peak, and mean metrics
+  -> FFT frequency analysis
+  -> Acceptance-limit evaluation
+  -> Automated PDF report
 ```
 
----
+## Technical Details
 
-## Technical details
-
-| Parameter | Value |
-|---|---|
+| Item | Value |
+| --- | --- |
 | Sampling rate | 10,000 Hz |
-| Filter type | Butterworth low-pass, order 4 |
-| Filter cutoff | 2,000 Hz |
-| FFT | scipy.fft.rfft (single-sided) |
-| Channels | Vibration (g), Force (N), Torque (Nm), Temperature (°C) |
+| Filter | 4th order Butterworth low-pass |
+| Cutoff frequency | 2,000 Hz |
+| FFT method | Single-sided real FFT |
+| Channels | Vibration, force, torque, temperature |
+| Report output | PDF plus PNG plots |
 
-**The synthetic test data simulates:**
-- 3,000 RPM rotating component (50 Hz fundamental)
-- 1x, 2x, 3x RPM harmonics
-- Injected bearing defect frequency at ~187 Hz
-- Realistic sensor noise on all channels
-
----
+The synthetic test data simulates a rotating component at 3,000 RPM with 1x, 2x, and 3x harmonics, sensor noise, and a bearing-defect signature around 187 Hz.
 
 ## Installation
 
 ```bash
-pip install numpy pandas scipy matplotlib reportlab
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+On macOS/Linux:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 ## Usage
 
+Run the batch analyser with generated synthetic data:
+
 ```bash
-# Run with auto-generated synthetic data
-python test_analyser.py
-
-# Run with your own CSV file
-python test_analyser.py your_sensor_data.csv
+python src/test_analyser.py
 ```
 
-**CSV format expected:**
+Run it with your own CSV file:
+
+```bash
+python src/test_analyser.py path/to/sensor_data.csv
 ```
-time_s, vibration_g, force_N, torque_Nm, temperature_C
-0.0001, 1.234, 252.1, 22.3, 42.0
-...
+
+Expected CSV format:
+
+```csv
+time_s,vibration_g,force_N,torque_Nm,temperature_C
+0.0001,1.234,252.1,22.3,42.0
 ```
 
----
+Run the real-time DAQ simulator:
 
-## Sample output
+```bash
+python src/daq_realtime.py
+```
 
-The tool detects an unexpected frequency peak at ~187 Hz (bearing defect signature) and flags it in the report with a recommendation to inspect the bearing before the next test run.
+## Output
 
----
+The batch analyser writes files to `output/`:
 
-## Relevance to aerospace test engineering
+- `test_report.pdf` - structured report with metrics, FFT analysis, plots, and pass/fail verdict
+- `plot_time_domain.png` - four-channel time-domain overview
+- `plot_fft.png` - vibration spectrum with dominant frequency peaks
+- `plot_metrics.png` - metrics compared against acceptance limits
 
-This pipeline mirrors the test automation work I perform in practice:
+A sample report is available at [docs/test_report_sample.pdf](docs/test_report_sample.pdf).
 
-- **Multi-channel DAQ** — simultaneous measurement of vibration, force, torque, temperature
-- **Signal filtering** — Butterworth filter removes electrical noise before analysis
-- **FFT analysis** — identifies frequency signatures, detects anomalies vs expected RPM harmonics
-- **Automated reporting** — removes manual post-processing, ensures consistent documentation
-- **Pass/fail evaluation** — compares measured values against configurable acceptance limits
+## Engineering Relevance
 
-The same architecture applies to rocket component testing: sensor data from a test stand → automated processing → structured report → pass/fail decision.
+The workflow reflects practical test automation used in aerospace, automotive, and rotating machinery environments:
 
----
+- DAQ-style multi-channel measurement
+- signal filtering before analysis
+- FFT-based fault signature detection
+- automated report generation
+- repeatable pass/fail evaluation
+
+The same structure can be adapted to rocket component tests, motor test benches, drivetrain endurance tests, or other sensor-heavy validation workflows.
 
 ## Author
 
-Prajwal Bekal
-M.Sc. Mechatronics & Cyber-Physical Systems — Deggendorf Institute of Technology
-prajwalbekal9@gmail.com
+Prajwal Bekal  
+M.Sc. Mechatronics and Cyber-Physical Systems  
+Deggendorf Institute of Technology
