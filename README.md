@@ -1,40 +1,43 @@
 # Rotating Component Test Data Analyser
 
 [![Validate Rotating Component Test Data Analyser](https://github.com/prajwalbekal/rotating-component-test-analyser/actions/workflows/validate.yml/badge.svg)](https://github.com/prajwalbekal/rotating-component-test-analyser/actions/workflows/validate.yml)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-Automated multi-channel sensor data analysis for rotating component test engineering.
+**Automated multi-channel sensor data analysis pipeline for rotating component test engineering.**
 
-This project simulates an engineering post-processing workflow for endurance-test data. It reads raw sensor data, filters noisy signals, calculates test metrics, performs FFT analysis, flags abnormal frequency signatures, and generates a structured PDF report.
+Raw DAQ-style CSV data goes in. Filtered signals, metrics, FFT diagnostics, fault-signature detection, plots, and a structured PDF report come out.
 
-## Why this project matters
+## Why This Project Matters
 
-Manual test-data review is slow, inconsistent, and easy to repeat incorrectly. This tool shows how a test engineer can move from raw DAQ-style CSV data to a repeatable pass/fail report with plots and diagnostic evidence.
+Manual test-data review is slow, inconsistent, and easy to repeat incorrectly. This project shows how a test engineer can move from raw sensor data to a repeatable pass/fail report with diagnostic evidence, including detection of a planted bearing-defect signature.
+
+The same structure can be adapted to motor test benches, drivetrain endurance tests, rotating machinery validation, aerospace component tests, and other sensor-heavy workflows.
 
 ## Features
 
-- Multi-channel analysis for vibration, force, torque, and temperature
-- Butterworth low-pass filtering for noise reduction
-- FFT-based vibration frequency analysis
-- Automatic peak detection for dominant frequencies
-- Configurable acceptance limits and pass/fail checks
-- PDF report generation with plots and engineering summary
-- Optional real-time DAQ simulator with live plots
+- Multi-channel analysis for **vibration, force, torque, and temperature**
+- 4th-order **Butterworth low-pass filtering** for noise reduction
+- **FFT-based vibration analysis** with automatic dominant-frequency peak detection
+- Configurable acceptance limits with **pass/fail evaluation**
+- Automated **PDF report generation** with plots and engineering summary
+- Optional **real-time DAQ simulator** with live FFT display
+- Deterministic validation through `scripts/validate.py` and GitHub Actions
 
-## Repository Structure
+## Headline Result
 
-```text
-.
-+-- src/
-|   +-- test_analyser.py      # Batch analysis and PDF report generation
-|   +-- daq_realtime.py       # Real-time DAQ simulation and live FFT display
-+-- docs/
-|   +-- images/               # Generated plot previews for GitHub
-|   +-- test_report_sample.pdf
-+-- scripts/
-|   +-- validate.py           # Deterministic validation checks
-+-- requirements.txt
-+-- README.md
-```
+The synthetic test data simulates a rotating component at **3,000 RPM** with 1x, 2x, and 3x shaft harmonics, sensor noise, and a planted **bearing-defect signature near 187 Hz**.
+
+The pipeline correctly recovers:
+
+| Detection | Frequency | Meaning |
+| --- | ---: | --- |
+| 1x shaft | `50 Hz` | Fundamental rotation rate |
+| 2x shaft | `100 Hz` | Shaft harmonic |
+| 3x shaft | `150 Hz` | Higher-order shaft harmonic |
+| Bearing defect | `187 Hz` | Planted fault signature surfaced by FFT analysis |
+
+That is the core engineering value: distinguishing expected rotational harmonics from a diagnostic fault signature.
 
 ## Pipeline
 
@@ -42,7 +45,7 @@ Manual test-data review is slow, inconsistent, and easy to repeat incorrectly. T
 Raw sensor CSV
   -> Butterworth low-pass filtering
   -> RMS, peak, and mean metrics
-  -> FFT frequency analysis
+  -> Single-sided real FFT
   -> Acceptance-limit evaluation
   -> Automated PDF report
 ```
@@ -51,18 +54,16 @@ Raw sensor CSV
 
 | Item | Value |
 | --- | --- |
-| Sampling rate | 10,000 Hz |
-| Filter | 4th order Butterworth low-pass |
-| Cutoff frequency | 2,000 Hz |
-| FFT method | Single-sided real FFT |
-| Channels | Vibration, force, torque, temperature |
-| Report output | PDF plus PNG plots |
-
-The synthetic test data simulates a rotating component at 3,000 RPM with 1x, 2x, and 3x harmonics, sensor noise, and a bearing-defect signature around 187 Hz.
+| Sampling rate | `10,000 Hz` |
+| Filter | `4th order Butterworth low-pass` |
+| Cutoff frequency | `2,000 Hz` |
+| FFT method | `Single-sided real FFT` |
+| Channels | `Vibration`, `force`, `torque`, `temperature` |
+| Report output | `PDF plus PNG plots` |
 
 ## Results Snapshot
 
-These values come from the deterministic synthetic test run:
+Deterministic synthetic-data run:
 
 | Check | Result |
 | --- | ---: |
@@ -88,19 +89,39 @@ These values come from the deterministic synthetic test run:
 
 ![Metrics vs acceptance limits](docs/images/plot_metrics.png)
 
-## Installation
+## Repository Structure
 
-```bash
-python -m venv .venv
-.venv\Scripts\activate
-pip install -r requirements.txt
+```text
+.
++-- src/
+|   +-- test_analyser.py      # Batch analysis and PDF report generation
+|   +-- daq_realtime.py       # Real-time DAQ simulation and live FFT display
++-- docs/
+|   +-- images/               # Generated plot previews for GitHub
+|   +-- test_report_sample.pdf
++-- scripts/
+|   +-- validate.py           # Deterministic validation checks
++-- .github/workflows/        # GitHub Actions CI
++-- requirements.txt
++-- LICENSE
++-- README.md
 ```
 
-On macOS/Linux:
+## Installation
+
+### Linux / macOS
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+### Windows PowerShell
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 ```
 
@@ -118,9 +139,9 @@ Run deterministic validation checks:
 python scripts/validate.py
 ```
 
-The validation run checks channel limits, confirms the 50 Hz shaft frequency, verifies the 187 Hz bearing-defect signature is surfaced, and confirms the PDF/plot outputs are generated.
+Validation confirms the channel limits, the 50 Hz shaft frequency, the 187 Hz bearing-defect signature, and the generated PDF/plot outputs.
 
-Run it with your own CSV file:
+Run with your own CSV file:
 
 ```bash
 python src/test_analyser.py path/to/sensor_data.csv
@@ -150,20 +171,23 @@ The batch analyser writes files to `output/`:
 
 A sample report is available at [docs/test_report_sample.pdf](docs/test_report_sample.pdf).
 
-## Engineering Relevance
+## Skills Demonstrated
 
-The workflow reflects practical test automation used in aerospace, automotive, and rotating machinery environments:
+- **Signal processing** - DAQ workflows, Butterworth filtering, FFT analysis, peak detection
+- **Test engineering** - multi-channel measurement, acceptance limits, automated pass/fail, fault-signature detection
+- **Reporting automation** - programmatic PDF report generation with ReportLab
+- **Verification engineering** - deterministic seeds, CI-runnable validation, reproducible outputs
+- **Python toolchain** - NumPy, Pandas, SciPy, Matplotlib, ReportLab
 
-- DAQ-style multi-channel measurement
-- signal filtering before analysis
-- FFT-based fault signature detection
-- automated report generation
-- repeatable pass/fail evaluation
-
-The same structure can be adapted to rocket component tests, motor test benches, drivetrain endurance tests, or other sensor-heavy validation workflows.
+Relevant for rotating machinery testing, condition monitoring, NVH, motor and drivetrain testing, aerospace test engineering, and automotive endurance testing.
 
 ## Author
 
 Prajwal Bekal  
-M.Sc. Mechatronics and Cyber-Physical Systems  
-Deggendorf Institute of Technology
+M.Sc. Mechatronics and Cyber-Physical Systems, Deggendorf Institute of Technology  
+[GitHub](https://github.com/prajwalbekal) | [LinkedIn](https://de.linkedin.com/in/prajwal-bekal-5117b1150)
+
+## License
+
+MIT - see [LICENSE](LICENSE).
+
