@@ -1,6 +1,6 @@
-# RFA Test Data Analyser
+# Rotating Component Test Data Analyser
 
-[![Validate RFA Test Data Analyser](https://github.com/prajwalbekal/rfa-test-analyser/actions/workflows/validate.yml/badge.svg)](https://github.com/prajwalbekal/rfa-test-analyser/actions/workflows/validate.yml)
+[![Validate Rotating Component Test Data Analyser](https://github.com/prajwalbekal/rotating-component-test-analyser/actions/workflows/validate.yml/badge.svg)](https://github.com/prajwalbekal/rotating-component-test-analyser/actions/workflows/validate.yml)
 
 Automated multi-channel sensor data analysis for rotating component test engineering.
 

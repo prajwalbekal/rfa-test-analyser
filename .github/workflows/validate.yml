@@ -1,4 +1,4 @@
-name: Validate RFA Test Data Analyser
+name: Validate Rotating Component Test Data Analyser
 
 on:
   push:

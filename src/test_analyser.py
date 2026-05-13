@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-RFA Test Data Analyser
-======================
+Rotating Component Test Data Analyser
+=====================================
 Automated multi-channel sensor data analysis pipeline.
 Reads raw CSV test data, applies signal processing, runs FFT analysis,
 calculates metrics, and generates a structured PDF test report.
@@ -431,7 +431,7 @@ def run_analysis(csv_path=None, output_dir='output'):
     """
     os.makedirs(output_dir, exist_ok=True)
     print('\n══════════════════════════════════════════════')
-    print('  RFA Test Data Analyser — Prajwal Bekal')
+    print('  Rotating Component Test Data Analyser — Prajwal Bekal')
     print('══════════════════════════════════════════════\n')
 
     # Step 1: Load or generate data
