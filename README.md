@@ -1,5 +1,7 @@
 # RFA Test Data Analyser
 
+[![Validate RFA Test Data Analyser](https://github.com/prajwalbekal/rfa-test-analyser/actions/workflows/validate.yml/badge.svg)](https://github.com/prajwalbekal/rfa-test-analyser/actions/workflows/validate.yml)
+
 Automated multi-channel sensor data analysis for rotating component test engineering.
 
 This project simulates an engineering post-processing workflow for endurance-test data. It reads raw sensor data, filters noisy signals, calculates test metrics, performs FFT analysis, flags abnormal frequency signatures, and generates a structured PDF report.
@@ -22,13 +24,16 @@ Manual test-data review is slow, inconsistent, and easy to repeat incorrectly. T
 
 ```text
 .
-├── src/
-│   ├── test_analyser.py      # Batch analysis and PDF report generation
-│   └── daq_realtime.py       # Real-time DAQ simulation and live FFT display
-├── docs/
-│   └── test_report_sample.pdf
-├── requirements.txt
-└── README.md
++-- src/
+|   +-- test_analyser.py      # Batch analysis and PDF report generation
+|   +-- daq_realtime.py       # Real-time DAQ simulation and live FFT display
++-- docs/
+|   +-- images/               # Generated plot previews for GitHub
+|   +-- test_report_sample.pdf
++-- scripts/
+|   +-- validate.py           # Deterministic validation checks
++-- requirements.txt
++-- README.md
 ```
 
 ## Pipeline
@@ -55,6 +60,34 @@ Raw sensor CSV
 
 The synthetic test data simulates a rotating component at 3,000 RPM with 1x, 2x, and 3x harmonics, sensor noise, and a bearing-defect signature around 187 Hz.
 
+## Results Snapshot
+
+These values come from the deterministic synthetic test run:
+
+| Check | Result |
+| --- | ---: |
+| Samples analysed | `50,000` |
+| Vibration RMS | `1.6020 g` |
+| Force peak | `271.9539 N` |
+| Torque RMS | `22.0745 Nm` |
+| Temperature peak | `59.5630 C` |
+| Dominant FFT peaks | `50.0 Hz`, `100.0 Hz`, `187.0 Hz`, `150.0 Hz` |
+| Diagnostic note | `187 Hz bearing-defect zone activity detected` |
+
+## Visual Results
+
+### Time-Domain Signals
+
+![Time-domain multi-channel signals](docs/images/plot_time_domain.png)
+
+### FFT Vibration Spectrum
+
+![FFT vibration spectrum](docs/images/plot_fft.png)
+
+### Metrics vs Acceptance Limits
+
+![Metrics vs acceptance limits](docs/images/plot_metrics.png)
+
 ## Installation
 
 ```bash
@@ -78,6 +111,14 @@ Run the batch analyser with generated synthetic data:
 ```bash
 python src/test_analyser.py
 ```
+
+Run deterministic validation checks:
+
+```bash
+python scripts/validate.py
+```
+
+The validation run checks channel limits, confirms the 50 Hz shaft frequency, verifies the 187 Hz bearing-defect signature is surfaced, and confirms the PDF/plot outputs are generated.
 
 Run it with your own CSV file:
 

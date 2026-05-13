@@ -27,12 +27,19 @@ import os
 import sys
 from datetime import datetime
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 # ─── CONFIGURATION ───────────────────────────────────────────────────────────
 
 SAMPLING_RATE = 10000          # Hz — 10 kHz sampling rate
 FILTER_CUTOFF  = 2000          # Hz — low-pass filter cutoff
 FILTER_ORDER   = 4             # Butterworth filter order
+EXPECTED_HARMONICS_HZ = (50, 100, 150)
+FAULT_ZONE_HZ = (170, 200)
 
 # Acceptance limits (configurable)
 LIMITS = {
@@ -133,6 +140,22 @@ def compute_metrics(channel_data):
     peak = float(np.max(np.abs(channel_data)))
     mean = float(np.mean(channel_data))
     return {'rms': rms, 'peak': peak, 'mean': mean}
+
+
+def is_expected_harmonic(freq_hz, tolerance_hz=5):
+    """Return True when a peak is close to an expected RPM harmonic."""
+    return any(abs(freq_hz - expected) < tolerance_hz for expected in EXPECTED_HARMONICS_HZ)
+
+
+def find_unexpected_peaks(peak_freqs):
+    """Return dominant FFT peaks that do not match expected RPM harmonics."""
+    return [float(freq) for freq in peak_freqs if not is_expected_harmonic(float(freq))]
+
+
+def has_fault_zone_peak(peak_freqs):
+    """Return True when an unexpected peak lands in the bearing-defect band."""
+    low, high = FAULT_ZONE_HZ
+    return any(low <= freq <= high for freq in find_unexpected_peaks(peak_freqs))
 
 
 # ─── STEP 3: GENERATE PLOTS ──────────────────────────────────────────────────
@@ -294,14 +317,22 @@ def generate_pdf_report(metrics, peak_freqs, peak_mags, plot_paths, output_path,
     story += [h('1. Test Configuration'), tbl, sp()]
 
     # Overall result
-    all_pass = all([
+    channel_limits_pass = all([
         metrics['vibration']['rms']  <= LIMITS['vibration_rms_max'],
         metrics['force']['peak']     <= LIMITS['force_peak_max'],
         metrics['torque']['rms']     <= LIMITS['torque_rms_max'],
         metrics['temperature']['peak'] <= LIMITS['temp_max'],
     ])
-    result_color = '#0A6B3B' if all_pass else '#8B0000'
-    result_text  = 'PASS' if all_pass else 'FAIL — ANOMALY DETECTED'
+    spectral_anomaly = len(find_unexpected_peaks(peak_freqs)) > 0
+    if channel_limits_pass and not spectral_anomaly:
+        result_color = '#0A6B3B'
+        result_text = 'PASS'
+    elif channel_limits_pass and spectral_anomaly:
+        result_color = '#B85C00'
+        result_text = 'REVIEW — FREQUENCY ANOMALY DETECTED'
+    else:
+        result_color = '#8B0000'
+        result_text = 'FAIL — LIMIT EXCEEDED'
     story += [
         h('2. Overall Test Result'),
         Paragraph(f'<font color="{result_color}"><b>▶ {result_text}</b></font>', styles['body']),
@@ -343,9 +374,8 @@ def generate_pdf_report(metrics, peak_freqs, peak_mags, plot_paths, output_path,
     # FFT peaks table
     if len(peak_freqs) > 0:
         fft_data = [['Rank', 'Frequency (Hz)', 'Amplitude (g)', 'Assessment']]
-        expected = [50, 100, 150]
         for i, (f, m) in enumerate(zip(peak_freqs, peak_mags)):
-            is_expected = any(abs(f - e) < 5 for e in expected)
+            is_expected = is_expected_harmonic(f)
             assessment = 'Expected (RPM harmonic)' if is_expected else '⚠ Investigate — unexpected frequency'
             fft_data.append([str(i+1), f'{f:.1f}', f'{m:.4f}', assessment])
         ftbl = Table(fft_data, colWidths=[1.5*cm, 4*cm, 4*cm, 8*cm])
@@ -440,10 +470,14 @@ def run_analysis(csv_path=None, output_dir='output'):
 
     # Step 4: FFT analysis
     print('[4/6] Running FFT analysis on vibration channel...')
-    peak_freqs, peak_mags = plot_fft.__wrapped__ if hasattr(plot_fft, '__wrapped__') else ([], [])
     freqs, magnitude = compute_fft(filtered['vibration'])
     peak_freqs, peak_mags = find_dominant_peaks(freqs, magnitude, n_peaks=5)
     print(f'  ✓ Dominant frequencies: {[f"{f:.1f} Hz" for f in peak_freqs]}')
+    unexpected = find_unexpected_peaks(peak_freqs)
+    if unexpected:
+        print(f'  ⚠ Unexpected frequency peaks: {[f"{f:.1f} Hz" for f in unexpected]}')
+    if has_fault_zone_peak(peak_freqs):
+        print(f'  ⚠ Bearing-defect zone activity detected: {FAULT_ZONE_HZ[0]}-{FAULT_ZONE_HZ[1]} Hz')
 
     # Step 5: Generate plots
     print('[5/6] Generating plots...')
